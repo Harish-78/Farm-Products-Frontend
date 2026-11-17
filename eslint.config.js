@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'src/components/ui/**', 'src/components/chart-area-interactive.tsx', 'src/components/data-table.tsx', 'src/components/section-cards.tsx']),
+  globalIgnores(['dist', 'src/components/ui/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
