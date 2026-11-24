@@ -15,7 +15,7 @@ export async function onRequest(context) {
         message:
           "BACKEND_URL environment variable is not defined on the frontend Cloudflare Pages project.",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -128,7 +128,7 @@ export async function onRequest(context) {
         message: "Proxy error communicating with backend service",
         error: error.message,
       }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
+      { status: 502, headers: { "Content-Type": "application/json" } },
     );
   }
 }
