@@ -1,0 +1,13 @@
+# Cloudflare Pages / Wrangler configuration for Poongodi frontend
+# Deploy with:  npx wrangler pages deploy dist --project-name farm-products-frontend
+
+name = "farm-products-frontend"
+
+[build]
+  command = "npm run build"
+  functions = "functions"
+  destination = "dist"
+
+[env.production]
+  # Production environment variables are set in the Cloudflare Pages dashboard
+  # (Settings → Environment variables). BACKEND_URL must be defined there.
