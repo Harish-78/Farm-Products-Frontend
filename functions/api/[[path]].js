@@ -6,8 +6,8 @@
 
 export async function onRequest(context) {
   const { request, env } = context;
-
   const backendUrl = env.BACKEND_URL;
+
   if (!backendUrl) {
     return new Response(
       JSON.stringify({
@@ -25,12 +25,10 @@ export async function onRequest(context) {
 
   const cleanBackend = backendUrl.replace(/\/$/, "");
   const targetUrl = new URL(`${cleanBackend}/api${subPath}`);
-
-  // Carry query string verbatim (avoids duplicating params like OAuth code/state)
   targetUrl.search = parsedUrl.search;
 
   // --- Forward incoming headers (drop hop-by-hop / host / length) ---
-  const headers = {};
+  const headers = new Headers();
   for (const [key, value] of request.headers.entries()) {
     const lowerKey = key.toLowerCase();
     if (
@@ -41,13 +39,13 @@ export async function onRequest(context) {
     ) {
       continue;
     }
-    headers[lowerKey] = value;
+    headers.set(key, value);
   }
 
   // Tell the backend the public origin so OAuth callback/redirect URLs are
   // built against the FRONTEND host, not the backend host.
-  headers["x-forwarded-host"] = parsedUrl.host;
-  headers["x-forwarded-proto"] = "https";
+  headers.set("x-forwarded-host", parsedUrl.host);
+  headers.set("x-forwarded-proto", "https");
 
   // --- Prepare fetch ---
   const fetchOptions = {
@@ -66,7 +64,7 @@ export async function onRequest(context) {
   try {
     const backendResponse = await fetch(targetUrl.toString(), fetchOptions);
 
-    // --- Copy response headers, skipping hop-by-hop + cookies (handled below) ---
+    // --- Build response headers, skipping hop-by-hop + cookies (handled below) ---
     const responseHeaders = new Headers();
     backendResponse.headers.forEach((val, key) => {
       const lower = key.toLowerCase();
@@ -82,36 +80,36 @@ export async function onRequest(context) {
     });
 
     // --- Rewrite Set-Cookie to bind to the FRONTEND origin ---
-    const setCookies = [];
-    const rawSetCookie = backendResponse.headers.get("set-cookie");
-    if (rawSetCookie) {
-      try {
-        // getSetCookie() may not be available in all runtimes; fall back to header
-        const cookies = backendResponse.headers.getSetCookie
-          ? backendResponse.headers.getSetCookie()
-          : [rawSetCookie];
-        setCookies.push(...cookies);
-      } catch {
-        setCookies.push(rawSetCookie);
-      }
+    // Cloudflare merges multiple Set-Cookie values when read via .get(),
+    // so read them individually with getSetCookie() / getAll().
+    let setCookies = [];
+    if (typeof backendResponse.headers.getSetCookie === "function") {
+      setCookies = backendResponse.headers.getSetCookie();
+    } else if (typeof backendResponse.headers.getAll === "function") {
+      setCookies = backendResponse.headers.getAll("Set-Cookie");
+    } else {
+      const raw = backendResponse.headers.get("set-cookie");
+      if (raw) setCookies = [raw];
     }
 
-    if (setCookies.length > 0) {
-      const rewritten = setCookies.map((c) => {
-        let out = c;
-        // Remove Domain so the cookie binds to the frontend host (the proxy origin).
-        out = out.replace(/;\s*Domain=[^;]+/gi, "");
-        // Ensure Secure is present (Cloudflare Pages is HTTPS). Avoid duplicating it.
-        if (!/;\s*Secure/i.test(out)) {
-          out += "; Secure";
-        }
-        // Ensure SameSite=Lax if not set (safe for same-origin proxy).
-        if (!/;\s*SameSite=/i.test(out)) {
-          out += "; SameSite=Lax";
-        }
-        return out;
-      });
-      responseHeaders.set("Set-Cookie", rewritten);
+    // Append each cookie individually — do NOT collapse into one header.
+    for (const c of setCookies) {
+      let out = c;
+      // Remove Domain so the cookie binds to the frontend host (the proxy origin).
+      out = out.replace(/;\s*Domain=[^;]+/gi, "");
+      // Ensure Path=/ so the cookie is sent on every route.
+      if (!/;\s*Path=/i.test(out)) {
+        out += "; Path=/";
+      }
+      // Ensure Secure is present (Cloudflare Pages is HTTPS).
+      if (!/;\s*Secure/i.test(out)) {
+        out += "; Secure";
+      }
+      // Ensure SameSite=Lax if not set (safe for same-origin proxy).
+      if (!/;\s*SameSite=/i.test(out)) {
+        out += "; SameSite=Lax";
+      }
+      responseHeaders.append("Set-Cookie", out);
     }
 
     // --- Send body ---
