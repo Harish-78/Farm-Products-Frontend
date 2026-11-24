@@ -1,9 +1,3 @@
-// Cloudflare Pages Function — proxies /api/* to the backend
-// File: functions/api/[[path]].js  (matches /api/* routes)
-
-// Environment variable (set in Cloudflare Pages dashboard → Settings → Environment variables):
-//   BACKEND_URL = https://farm-products-backend.vercel.app
-
 export async function onRequest(context) {
   const { request, env } = context;
   const backendUrl = env.BACKEND_URL;
