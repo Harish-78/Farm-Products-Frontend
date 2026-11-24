@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
-import { Wheat, Plus, AlertTriangle, Bell, Edit, Check } from 'lucide-react';
+import { Wheat, Plus, AlertTriangle, Bell, Edit, Check, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface FeedItem {
   id: number;
@@ -39,6 +40,7 @@ export default function FeedsPage() {
   // Quick edit stock state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editStock, setEditStock] = useState<number>(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const fetchFeeds = async () => {
     setLoading(true);
@@ -105,6 +107,21 @@ export default function FeedsPage() {
       fetchFeeds();
     } catch (err: any) {
       alert(err.message || 'Update failed');
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async (id: number) => {
+    try {
+      await apiFetch(`/farm/feeds/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      fetchFeeds();
+    } catch (err: any) {
+      setDeleteConfirmId(null);
+      alert(err.message || 'Delete failed');
     }
   };
 
@@ -344,17 +361,28 @@ export default function FeedsPage() {
                             <Check className="h-3.5 w-3.5" /> Save Stock
                           </Button>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1 text-xs"
-                            onClick={() => {
-                              setEditingId(f.id);
-                              setEditStock(Number(f.current_stock_kg));
-                            }}
-                          >
-                            <Edit className="h-3 w-3" /> Update Stock
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1 text-xs mr-2"
+                              onClick={() => {
+                                setEditingId(f.id);
+                                setEditStock(Number(f.current_stock_kg));
+                              }}
+                            >
+                              <Edit className="h-3 w-3" /> Update Stock
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(f.id)}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              title="Delete Feed Item"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -365,6 +393,16 @@ export default function FeedsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {deleteConfirmId && (
+        <ConfirmDialog
+          open={true}
+          onOpenChange={() => setDeleteConfirmId(null)}
+          title="Delete Feed Item"
+          description="Are you sure you want to delete this feed stock record? This action cannot be undone."
+          onConfirm={() => handleConfirmDelete(deleteConfirmId!)}
+        />
+      )}
     </AdminLayout>
   );
 }

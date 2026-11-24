@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
 import { Plus, RefreshCw, Trash2, Filter, Package, Tag, Zap, Truck, HeartPulse } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface ExpenseItem {
   id: number;
@@ -35,6 +36,7 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Form states
   const [category, setCategory] = useState('Packaging & Labeling');
@@ -109,12 +111,17 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this expense record?')) return;
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async (id: number) => {
     try {
       await apiFetch(`/farm/expenses/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
       fetchExpenses();
     } catch (err: any) {
+      setDeleteConfirmId(null);
       alert(err.message || 'Delete failed');
     }
   };
@@ -363,6 +370,16 @@ export default function ExpensesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {deleteConfirmId && (
+        <ConfirmDialog
+          open={true}
+          onOpenChange={() => setDeleteConfirmId(null)}
+          title="Delete Expense"
+          description="Are you sure you want to delete this expense record? This action cannot be undone."
+          onConfirm={() => handleConfirmDelete(deleteConfirmId!)}
+        />
+      )}
     </AdminLayout>
   );
 }

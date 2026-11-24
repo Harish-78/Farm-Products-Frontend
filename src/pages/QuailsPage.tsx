@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/api';
-import { Bird, Plus, RefreshCw, Edit, Check } from 'lucide-react';
+import { Bird, Plus, RefreshCw, Edit, Check, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface LivestockBatch {
   id: number;
@@ -36,6 +37,7 @@ export default function QuailsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editCount, setEditCount] = useState<number>(0);
   const [editMortality, setEditMortality] = useState<number>(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const fetchBatches = async () => {
     setLoading(true);
@@ -105,6 +107,21 @@ export default function QuailsPage() {
       fetchBatches();
     } catch (err: any) {
       alert(err.message || 'Update failed');
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async (id: number) => {
+    try {
+      await apiFetch(`/farm/livestock/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      fetchBatches();
+    } catch (err: any) {
+      setDeleteConfirmId(null);
+      alert(err.message || 'Delete failed');
     }
   };
 
@@ -319,18 +336,29 @@ export default function QuailsPage() {
                             <Check className="h-3.5 w-3.5" /> Save
                           </Button>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1 text-xs"
-                            onClick={() => {
-                              setEditingId(b.id);
-                              setEditCount(b.current_count);
-                              setEditMortality(b.mortality_count);
-                            }}
-                          >
-                            <Edit className="h-3 w-3" /> Quick Edit
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1 text-xs mr-2"
+                              onClick={() => {
+                                setEditingId(b.id);
+                                setEditCount(b.current_count);
+                                setEditMortality(b.mortality_count);
+                              }}
+                            >
+                              <Edit className="h-3 w-3" /> Quick Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(b.id)}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              title="Delete Batch"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -341,6 +369,16 @@ export default function QuailsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {deleteConfirmId && (
+        <ConfirmDialog
+          open={true}
+          onOpenChange={() => setDeleteConfirmId(null)}
+          title="Delete Livestock Batch"
+          description="Are you sure you want to delete this livestock batch? This action cannot be undone."
+          onConfirm={() => handleConfirmDelete(deleteConfirmId!)}
+        />
+      )}
     </AdminLayout>
   );
 }

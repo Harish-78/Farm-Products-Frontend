@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
-import { Search, Filter, RefreshCw, CheckCircle2, Clock, Truck, XCircle } from 'lucide-react';
+import { Search, Filter, RefreshCw, CheckCircle2, Clock, Truck, XCircle, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface Order {
   id: number;
@@ -29,6 +30,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -92,6 +94,21 @@ export default function OrdersPage() {
       console.error('Failed to update status', err);
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = async (id: number) => {
+    try {
+      await apiFetch(`/orders/${id}`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      setOrders((prev) => prev.filter((ord) => ord.id !== id));
+    } catch (err) {
+      setDeleteConfirmId(null);
+      alert(err.message || 'Delete failed');
     }
   };
 
@@ -240,17 +257,28 @@ export default function OrdersPage() {
                           </span>
                         </td>
                         <td className="py-4 px-4 sm:px-0 text-right">
-                          <select
-                            disabled={updatingId === ord.id}
-                            value={ord.order_status}
-                            onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
-                            className="text-xs bg-card border border-border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                          >
-                            <option value="PROCESSING">Mark Processing</option>
-                            <option value="SHIPPED">Mark Shipped</option>
-                            <option value="DELIVERED">Mark Delivered</option>
-                            <option value="CANCELLED">Mark Cancelled</option>
-                          </select>
+                          <div className="flex items-center gap-1">
+                            <select
+                              disabled={updatingId === ord.id}
+                              value={ord.order_status}
+                              onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
+                              className="text-xs bg-card border border-border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                            >
+                              <option value="PROCESSING">Mark Processing</option>
+                              <option value="SHIPPED">Mark Shipped</option>
+                              <option value="DELIVERED">Mark Delivered</option>
+                              <option value="CANCELLED">Mark Cancelled</option>
+                            </select>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(ord.id)}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              title="Delete Order"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -261,6 +289,16 @@ export default function OrdersPage() {
           </CardContent>
         </Card>
       </div>
+
+      {deleteConfirmId && (
+        <ConfirmDialog
+          open={true}
+          onOpenChange={() => setDeleteConfirmId(null)}
+          title="Delete Order"
+          description="Are you sure you want to delete this order record? This action cannot be undone."
+          onConfirm={() => handleConfirmDelete(deleteConfirmId!)}
+        />
+      )}
     </AdminLayout>
   );
 }
