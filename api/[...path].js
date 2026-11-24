@@ -17,8 +17,7 @@ export default async function handler(req, res) {
   // request to /api/auth/login?q=1.  We also accept the full /api/... form
   // for resilience (e.g. local testing or future Vercel runtime changes).
   const parsedUrl = new URL(req.url, "http://localhost");
-  const subPath = parsedUrl.pathname.replace(/^\/api/, "");
-
+  const subPath = parsedUrl.pathname.replace(/^\/api(\/proxy)?/, "");
   const cleanBackend = backendUrl.replace(/\/$/, "");
   const cleanPrefix = apiPrefix.startsWith("/") ? apiPrefix : `/${apiPrefix}`;
   const targetUrl = new URL(`${cleanBackend}${cleanPrefix}${subPath}`);
@@ -138,7 +137,7 @@ export default async function handler(req, res) {
             (req.headers["x-forwarded-host"] || req.headers.host);
           const rewrittenLocation = location.replace(
             backendOrigin,
-            frontendOrigin
+            frontendOrigin,
           );
           res.setHeader("Location", rewrittenLocation);
         }
