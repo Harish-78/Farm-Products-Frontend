@@ -10,6 +10,7 @@ pages_build_output_dir = "./dist"
 # Runtime compatibility date.
 compatibility_date = "2026-11-24"
 
+
 # Production environment variables are set in the Cloudflare Pages dashboard
 # (Settings → Environment variables). BACKEND_URL must be defined there.
 # Do not put BACKEND_URL here — this file is committed to git.
