@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   // request to /api/auth/login?q=1.  We also accept the full /api/... form
   // for resilience (e.g. local testing or future Vercel runtime changes).
   const parsedUrl = new URL(req.url, "http://localhost");
-  const subPath = parsedUrl.pathname.replace(/^\/api(\/proxy)?/, "");
+  const subPath = parsedUrl.pathname.replace(/^\/api(\/index)?(\/proxy)?/, "");
   const cleanBackend = backendUrl.replace(/\/$/, "");
   const cleanPrefix = apiPrefix.startsWith("/") ? apiPrefix : `/${apiPrefix}`;
   const targetUrl = new URL(`${cleanBackend}${cleanPrefix}${subPath}`);
