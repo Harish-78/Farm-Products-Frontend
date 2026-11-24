@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -9,6 +10,7 @@ import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, initiateGoogleLogin } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const errorParam = searchParams.get('error');
@@ -27,7 +29,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/');
     } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to login');
+      setError((err as Error).message || t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -44,8 +46,8 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Enter your credentials to access the Poongodi Farm Products Admin Portal"
+      title={t('auth.welcomeBack')}
+      subtitle={t('auth.loginSubtitle')}
     >
       <div className="space-y-5">
         {error && (
@@ -57,7 +59,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold">
-              Email Address
+              {t('auth.email')}
             </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -76,13 +78,13 @@ export default function LoginPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password" className="text-xs font-semibold">
-                Password
+                {t('auth.password')}
               </Label>
               <Link
                 to="/forgot-password"
                 className="text-xs text-primary hover:underline font-medium"
               >
-                Forgot password?
+                {t('auth.forgotPassword')}
               </Link>
             </div>
             <div className="relative">
@@ -100,7 +102,7 @@ export default function LoginPage() {
           </div>
 
           <Button type="submit" className="w-full h-10 font-semibold gap-2 shadow-sm" disabled={loading}>
-            {loading ? 'Authenticating...' : 'Sign In to Admin'}
+            {loading ? t('auth.authenticating') : t('auth.signInToAdmin')}
             {!loading && <ArrowRight className="h-4 w-4" />}
           </Button>
         </form>
@@ -110,7 +112,9 @@ export default function LoginPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-3 text-muted-foreground font-medium">Or continue with</span>
+            <span className="bg-background px-3 text-muted-foreground font-medium">
+              {t('common.orContinueWith')}
+            </span>
           </div>
         </div>
 
@@ -138,13 +142,13 @@ export default function LoginPage() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Sign In with Google
+          {t('auth.signInWithGoogle')}
         </Button>
 
         <p className="text-center text-xs text-muted-foreground pt-2">
-          New administrator?{' '}
+          {t('auth.newAdministrator')}{' '}
           <Link to="/signup" className="text-primary font-semibold hover:underline">
-            Register new account
+            {t('auth.registerNewAccount')}
           </Link>
         </p>
       </div>

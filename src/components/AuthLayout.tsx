@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { Sprout, ShieldCheck, HeartHandshake, Leaf } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -9,6 +10,7 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground relative overflow-hidden">
       {/* Absolute top-right Theme Toggle */}
@@ -28,9 +30,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <Sprout className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Poongodi Farm Products</h1>
+            <h1 className="text-xl font-bold tracking-tight">{t('app.name')}</h1>
             <p className="text-xs text-emerald-300/80 font-medium tracking-wide uppercase">
-              Admin & Operations Portal
+              {t('app.tagline')}
             </p>
           </div>
         </div>
@@ -41,10 +43,10 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <Leaf className="h-3.5 w-3.5" /> 100% Pure Traditional & Organic Farm Produce
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
-            Managing fresh harvest, organic goods, and direct-to-consumer farm orders.
+            {t('app.farmDescription')}
           </h2>
           <p className="text-sm text-emerald-100/70 leading-relaxed">
-            From wood-pressed oils and pure A2 desi ghee to native honey and fresh harvest baskets, Poongodi brings the farm closer to homes.
+            {t('app.fromFarm')}
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-4">
@@ -63,7 +65,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 
         {/* Bottom: Footer info */}
         <div className="relative z-10 text-xs text-emerald-300/60 font-medium">
-          © {new Date().getFullYear()} Poongodi Farm Products. All rights reserved.
+          © {new Date().getFullYear()} {t('app.name')}. All rights reserved.
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   // Desktop slide/collapse state (saved in localStorage)
   const [collapsed, setCollapsed] = useState(() => {
@@ -30,8 +32,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   const navItems = [
-    { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
-    { to: '/orders', label: 'Orders Management', icon: ShoppingBag, end: false },
+    { to: '/', label: 'nav.overview', icon: LayoutDashboard, end: true },
+    { to: '/orders', label: 'nav.orders', icon: ShoppingBag, end: false },
   ];
 
   return (
@@ -43,9 +45,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <Sprout className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold tracking-tight leading-none">Poongodi</h2>
+            <h2 className="text-sm font-bold tracking-tight leading-none">{t('app.name')}</h2>
             <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-              Farm Products Admin
+              {t('nav.farmProductsAdmin')}
             </span>
           </div>
         </div>
@@ -94,9 +96,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               </div>
               {!collapsed && (
                 <div className="truncate animate-in fade-in duration-200">
-                  <h2 className="text-sm font-bold tracking-tight leading-none">Poongodi</h2>
+                  <h2 className="text-sm font-bold tracking-tight leading-none">{t('app.name')}</h2>
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                    Farm Products
+                    {t('nav.farmProductsAdmin')}
                   </span>
                 </div>
               )}
@@ -124,7 +126,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   end={item.end}
                   onClick={() => setMobileOpen(false)}
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? t(item.label) : undefined}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       collapsed ? 'justify-center' : ''
@@ -137,7 +139,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="h-5 w-5 shrink-0" />
                   {!collapsed && (
-                    <span className="truncate animate-in fade-in duration-150">{item.label}</span>
+                    <span className="truncate animate-in fade-in duration-150">{t(item.label)}</span>
                   )}
                 </NavLink>
               );
@@ -192,13 +194,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             variant="outline"
             size="sm"
             onClick={() => logout()}
-            title={collapsed ? 'Sign Out' : undefined}
+            title={collapsed ? t('nav.signOut') : undefined}
             className={`w-full text-xs text-muted-foreground hover:text-destructive ${
               collapsed ? 'justify-center px-0' : 'justify-start gap-2'
             }`}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Sign Out</span>}
+            {!collapsed && <span>{t('nav.signOut')}</span>}
           </Button>
         </div>
       </aside>

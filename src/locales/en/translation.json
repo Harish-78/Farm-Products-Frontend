@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "Poongodi Farm Products",
+    "tagline": "Admin & Operations Portal",
+    "farmDescription": "Managing fresh harvest, organic goods, and direct-to-consumer farm orders.",
+    "fromFarm": "From wood-pressed oils and pure A2 desi ghee to native honey and fresh harvest baskets, Poongodi brings the farm closer to homes."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "orders": "Orders Management",
+    "overview": "Overview",
+    "signOut": "Sign Out",
+    "farmProductsAdmin": "Farm Products Admin"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "resetLink": "Reset Link",
+    "createNewPassword": "Create New Password",
+    "welcomeBack": "Welcome Back",
+    "loginSubtitle": "Enter your credentials to access the Poongodi Farm Products Admin Portal",
+    "loginFailed": "Failed to login",
+    "authenticating": "Authenticating...",
+    "signInToAdmin": "Sign In to Admin",
+    "signInWithGoogle": "Sign In with Google",
+    "newAdministrator": "New administrator?",
+    "registerNewAccount": "Register new account"
+  },
+  "common": {
+    "home": "Home",
+    "language": "Language",
+    "english": "English",
+    "tamil": "தமிழ்",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "orContinueWith": "Or continue with"
+  },
+  "footer": {
+    "copyright": "© {year} Poongodi Farm Products. All rights reserved."
+  }
+}

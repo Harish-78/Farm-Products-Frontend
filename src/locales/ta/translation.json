@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "பூங்கொடி பண்ணை பொருட்கள்",
+    "tagline": "நிர்வாக மற்றும் செயல்பாட்டு தளம்",
+    "farmDescription": "புதianus paneeri, organic saleigal, matrum neradi-vadigai viniyoda panmai order-galai nirvagippom.",
+    "fromFarm": "Marathotta ennay, suddha A2 desi ney, maraveli then matrum puthiya murai payiru korukkal moolam, Poongodi veedukku mannin nerukkamaikku kondu varugiradhu."
+  },
+  "nav": {
+    "dashboard": "கட்டுப்பாட்டு臺",
+    "orders": "ஆர்டர் நிர்வாகம்",
+    "overview": "மரபு",
+    "signOut": "வெளியேறு",
+    "farmProductsAdmin": "பண்ணை பொருட்கள் நிர்வாகம்"
+  },
+  "auth": {
+    "login": "உள்நுழை",
+    "signup": "புதிய கணக்கில் சேர்க்க",
+    "forgotPassword": "சுட்டியлизаீங்க?",
+    "resetPassword": "மீட்கPwd",
+    "email": "மின்னஞ்சல் முகவரி",
+    "password": "கடவுச்சொல்",
+    "confirmPassword": "கடவுச்சொல்லை உறுதிப்படுத்த",
+    "fullName": "முழுப் பெயர்",
+    "dontHaveAccount": "கணக்கு இல்லையா?",
+    "alreadyHaveAccount": "ஏற்கனவே கணக்கு আছে?",
+    "resetLink": "மீட்ட turtle",
+    "createNewPassword": "புதிய கடவுச்சொல்லை உருவாக்கு",
+    "welcomeBack": "மீண்டும் வரவேற்கிறோம்",
+    "loginSubtitle": "பூங்கொடி பண்ணை பொருட்கள் நிர்வாக தளத்தை அணுக உங்கள் சுயவிவரத்தை உள்ளிடவும்",
+    "loginFailed": "உள்நுழ británico தோல்வி",
+    "authenticating": "உள்நுழ residentes...",
+    "signInToAdmin": "நிர்வாகத்தில் உள்நுழை",
+    "signInWithGoogle": "Google-ஐன் மூலம் உள்நுழை",
+    "newAdministrator": "புதிய நிர்வாகியா?",
+    "registerNewAccount": "புதிய கணக்கை பதிவு செய்யவும்"
+  },
+  "common": {
+    "home": "முகப்பு",
+    "language": "மொழி",
+    "english": "ஆங்கிலம்",
+    "tamil": "தமிழ்",
+    "save": "சேமிக்க",
+    "cancel": "ரத்து",
+    "submit": "சமர்ப்பிக்க",
+    "loading": "லோட் ஆகிறது...",
+    "error": "பிழை",
+    "success": "வெற்றி",
+    "orContinueWith": "அல்லது இதனுடன் தொடர wznovi"
+  },
+  "footer": {
+    "copyright": "© {year} பூங்கೊடி பண்ணை பொருட்கள். அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை."
+  }
+}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { ProtectedRoute, PublicOnlyRoute } from '@/components/RouteGuards';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
@@ -15,6 +16,7 @@ export default function App() {
     <ThemeProvider defaultTheme="system" storageKey="poongodi-farm-products-theme">
       <AuthProvider>
         <BrowserRouter>
+          <LanguageSwitcher className="fixed top-4 right-4 z-50" />
           <Routes>
             {/* Authenticated Admin only routes */}
             <Route element={<ProtectedRoute />}>
