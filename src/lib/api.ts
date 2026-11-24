@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL;
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export interface User {
   id: number;
@@ -17,13 +17,16 @@ export interface ApiResponse<T = any> {
 }
 
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  // Ensure endpoint has a leading slash
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  const response = await fetch(`${API_BASE}${cleanEndpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
-    credentials: 'include', // Important: sends and receives HTTP-only cookies
+    credentials: 'include', // Important: sends and receives cookies on the same origin
   });
 
   const data = await response.json().catch(() => ({
