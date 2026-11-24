@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useUiStore } from '@/stores/useUiStore';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -22,17 +22,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
 
-  // Desktop slide/collapse state
-  const [collapsed, setCollapsed] = useState(() => {
-    return localStorage.getItem('sidebar-collapsed') === 'true';
-  });
-
-  // Mobile drawer slide state
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', String(collapsed));
-  }, [collapsed]);
+  // Sidebar collapse + mobile drawer state, powered by Zustand (persisted to localStorage).
+  const {
+    sidebarCollapsed: collapsed,
+    mobileOpen,
+    setMobileOpen,
+    toggleSidebarCollapsed,
+  } = useUiStore();
 
   const navItems = [
     { to: '/', label: t('nav.overview'), icon: LayoutDashboard, end: true },
@@ -110,7 +106,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => toggleSidebarCollapsed()}
               title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
             >

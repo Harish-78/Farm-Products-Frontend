@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-
-type Theme = 'dark' | 'light' | 'system'
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
+import { useThemeStore, type Theme } from '@/stores/useThemeStore'
 
 type ThemeProviderProps = {
   children: ReactNode
@@ -13,45 +12,49 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void
 }
 
-const initialState: ThemeProviderState = {
+const ThemeProviderContext = createContext<ThemeProviderState>({
   theme: 'system',
   setTheme: () => null,
-}
+})
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
-
+/**
+ * ThemeProvider is now a thin React wrapper around the Zustand theme store
+ * (`useThemeStore`). The store persists the theme to localStorage and is the
+ * single source of truth. All existing `useTheme()` consumers continue to work
+ * unchanged. `defaultTheme`/`storageKey` are accepted for API compatibility;
+ * zustand manages persistence under its own key.
+ */
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'vite-ui-theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
+  // `storageKey` is kept for API compatibility. Persistence is now owned by the
+  // Zustand theme store (key: `poongodi-theme-storage`) instead of localStorage directly.
+  void storageKey
 
+  const { theme, setTheme: setThemeStore } = useThemeStore()
+
+  // Initialize from the prop default before the persisted value hydrates.
   useEffect(() => {
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      root.classList.add(systemTheme)
-      root.style.colorScheme = systemTheme
-      return
-    }
-
-    root.classList.add(theme)
-    root.style.colorScheme = theme
+    const resolved =
+      theme === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : theme
+    root.classList.add(resolved)
+    root.style.colorScheme = resolved
   }, [theme])
 
   const value = {
-    theme,
+    theme: theme ?? defaultTheme,
     setTheme: (newTheme: Theme) => {
-      localStorage.setItem(storageKey, newTheme)
-      setTheme(newTheme)
+      setThemeStore(newTheme)
     },
   }
 
