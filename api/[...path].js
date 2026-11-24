@@ -12,9 +12,10 @@ export default async function handler(req, res) {
   }
 
   // --- Parse the incoming request path ---
-  // NOTE: If Vercel rewrites /api/* to this function, req.url should still
-  // contain the original path (e.g. /api/auth/login). If you observe it is
-  // rewritten to /api/proxy/..., change the strip regex below to match.
+  // In Vercel's Node.js runtime the catch-all `api/[...path].js` receives
+  // req.url as the *function-relative* path, e.g. "/auth/login?q=1" for a
+  // request to /api/auth/login?q=1.  We also accept the full /api/... form
+  // for resilience (e.g. local testing or future Vercel runtime changes).
   const parsedUrl = new URL(req.url, "http://localhost");
   const subPath = parsedUrl.pathname.replace(/^\/api/, "");
 
@@ -45,6 +46,12 @@ export default async function handler(req, res) {
   headers["x-forwarded-host"] =
     req.headers["x-forwarded-host"] || req.headers.host;
   headers["x-forwarded-proto"] = req.headers["x-forwarded-proto"] || "https";
+
+  // Ask the backend NOT to compress the response — the proxy relays the raw
+  // bytes and Vercel's edge will re-compress for the browser automatically.
+  // This avoids the bug where the proxy strips the content-encoding header
+  // but forwards still-compressed bytes, resulting in garbled responses.
+  headers["accept-encoding"] = "identity";
 
   // --- Prepare fetch ---
   const fetchOptions = {
@@ -98,6 +105,10 @@ export default async function handler(req, res) {
         let out = c;
         // Remove Domain so the cookie binds to the frontend host (the proxy origin).
         out = out.replace(/;\s*Domain=[^;]+/gi, "");
+        // Ensure Path=/ so the cookie is sent on every route including /api/*.
+        if (!/;\s*Path=/i.test(out)) {
+          out += "; Path=/";
+        }
         // Ensure Secure is present (Vercel is HTTPS). Avoid duplicating it.
         if (!/;\s*Secure/i.test(out)) {
           out += "; Secure";
@@ -111,10 +122,34 @@ export default async function handler(req, res) {
       res.setHeader("Set-Cookie", rewritten);
     }
 
+    // --- Handle redirects (e.g. OAuth callbacks) ---
+    // Rewrite Location headers that point at the backend to point at the
+    // frontend proxy instead, so the browser stays on the same origin.
+    if (backendResponse.status >= 300 && backendResponse.status < 400) {
+      const location = backendResponse.headers.get("location");
+      if (location) {
+        // If the backend redirects to itself (e.g. /api/auth/google/callback),
+        // rewrite to the frontend origin so cookies stay on the same site.
+        const backendOrigin = new URL(cleanBackend).origin;
+        if (location.startsWith(backendOrigin)) {
+          const frontendOrigin =
+            req.headers["x-forwarded-proto"] +
+            "://" +
+            (req.headers["x-forwarded-host"] || req.headers.host);
+          const rewrittenLocation = location.replace(
+            backendOrigin,
+            frontendOrigin
+          );
+          res.setHeader("Location", rewrittenLocation);
+        }
+      }
+    }
+
     // --- Send body ---
     const buffer = await backendResponse.arrayBuffer();
     res.send(Buffer.from(buffer));
   } catch (error) {
+    console.error("[Proxy Error]", error);
     res.status(502).json({
       success: false,
       message: "Proxy error communicating with backend service",
