@@ -106,7 +106,7 @@ export default function OrdersPage() {
               Manage, search, and update delivery status for all Poongodi Farm Products orders.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchOrders} className="gap-2 self-start sm:self-auto">
+          <Button variant="outline" size="sm" onClick={fetchOrders} className="gap-2 w-full sm:w-auto justify-center">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>

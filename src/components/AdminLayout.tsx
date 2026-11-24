@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   ShoppingBag,
   LogOut,
-  Sprout,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
+  Receipt,
+  Wheat,
+  Bird,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
 
-  // Desktop slide/collapse state (saved in localStorage)
+  // Desktop slide/collapse state
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('sidebar-collapsed') === 'true';
   });
@@ -32,8 +35,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }, [collapsed]);
 
   const navItems = [
-    { to: '/', label: 'nav.overview', icon: LayoutDashboard, end: true },
-    { to: '/orders', label: 'nav.orders', icon: ShoppingBag, end: false },
+    { to: '/', label: t('nav.overview'), icon: LayoutDashboard, end: true },
+    { to: '/quails', label: t('nav.quails'), icon: Bird, end: false },
+    { to: '/feeds', label: t('nav.feeds'), icon: Wheat, end: false },
+    { to: '/expenses', label: t('nav.expenses'), icon: Receipt, end: false },
+    { to: '/orders', label: t('nav.orders'), icon: ShoppingBag, end: false },
   ];
 
   return (
@@ -41,18 +47,19 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile Sticky Header */}
       <header className="md:hidden sticky top-0 z-40 h-16 border-b border-border bg-card/80 backdrop-blur px-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-            <Sprout className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/15 text-emerald-600 flex items-center justify-center border border-emerald-500/25">
+            <Bird className="h-4 w-4" />
           </div>
           <div>
             <h2 className="text-sm font-bold tracking-tight leading-none">{t('app.name')}</h2>
             <span className="text-[10px] text-muted-foreground uppercase font-semibold">
-              {t('nav.farmProductsAdmin')}
+              {t('app.tagline')}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <ThemeToggle />
           <Button
             variant="ghost"
@@ -76,12 +83,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Slidable / Collapsible Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 border-r border-border bg-card flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out md:static ${
-          // Mobile: slide in / out off-canvas
           mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'
-        } ${
-          // Desktop: slide between expanded (w-64) and collapsed rail (w-20)
-          collapsed ? 'md:w-20' : 'md:w-64'
-        }`}
+        } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
       >
         <div>
           {/* Brand & Collapse Header */}
@@ -91,20 +94,19 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             }`}
           >
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20 shrink-0">
-                <Sprout className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/25 shrink-0">
+                <Bird className="h-5 w-5" />
               </div>
               {!collapsed && (
                 <div className="truncate animate-in fade-in duration-200">
                   <h2 className="text-sm font-bold tracking-tight leading-none">{t('app.name')}</h2>
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                    {t('nav.farmProductsAdmin')}
+                    {t('app.tagline')}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Desktop Slide / Toggle Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -126,20 +128,20 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   end={item.end}
                   onClick={() => setMobileOpen(false)}
-                  title={collapsed ? t(item.label) : undefined}
+                  title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       collapsed ? 'justify-center' : ''
                     } ${
                       isActive
-                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        ? 'bg-emerald-600 text-white shadow-sm'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`
                   }
                 >
                   <Icon className="h-5 w-5 shrink-0" />
                   {!collapsed && (
-                    <span className="truncate animate-in fade-in duration-150">{t(item.label)}</span>
+                    <span className="truncate animate-in fade-in duration-150">{item.label}</span>
                   )}
                 </NavLink>
               );
@@ -163,7 +165,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   className="h-8 w-8 rounded-full border border-border object-cover shrink-0"
                 />
               ) : (
-                <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                <div className="h-8 w-8 rounded-full bg-emerald-500/15 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
                   {user?.name ? user.name[0].toUpperCase() : 'A'}
                 </div>
               )}
@@ -176,15 +178,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {!collapsed && (
-              <div className="hidden md:block">
+              <div className="hidden md:flex items-center gap-1">
                 <ThemeToggle />
               </div>
             )}
           </div>
 
-          {/* Theme toggle in collapsed state */}
           {collapsed && (
-            <div className="hidden md:flex justify-center pt-1">
+            <div className="hidden md:flex flex-col items-center gap-2 pt-1">
               <ThemeToggle />
             </div>
           )}
@@ -206,8 +207,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Page Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+        <main className="flex-1 p-3 sm:p-5 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

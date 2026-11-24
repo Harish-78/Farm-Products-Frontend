@@ -1,36 +1,31 @@
-import React from 'react';
-import { useTranslation, Trans } from 'react-i18next';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Languages } from 'lucide-react';
 
 export function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
+  const currentLang = i18n.resolvedLanguage || i18n.language || 'en';
 
-  const currentLang = i18n.language;
-  const isTamil = currentLang === 'ta';
+  const toggleLanguage = () => {
+    const nextLang = currentLang.startsWith('ta') ? 'en' : 'ta';
+    i18n.changeLanguage(nextLang);
+  };
+
+  const isTamil = currentLang.startsWith('ta');
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted transition-colors">
-          <Globe className="h-4 w-4" />
-          <span>{isTamil ? t('common.tamil') : t('common.english')}</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => i18n.changeLanguage('en')}>
-          <span className="flex items-center gap-2">
-            <span>🇬🇧</span>
-            {t('common.english')}
-          </span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => i18n.changeLanguage('ta')}>
-          <span className="flex items-center gap-2">
-            <span>🇮🇳</span>
-            {t('common.tamil')}
-          </span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleLanguage}
+      className="relative h-9 w-9 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      title={isTamil ? 'Switch to English' : 'தமிழுக்கு மாறவும்'}
+      aria-label="Toggle language"
+    >
+      <Languages className="h-4 w-4" />
+      <span className="absolute -bottom-0.5 -right-0.5 text-[9px] font-bold leading-none px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+        {isTamil ? 'த' : 'EN'}
+      </span>
+    </Button>
   );
 }

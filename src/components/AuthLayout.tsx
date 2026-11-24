@@ -1,7 +1,8 @@
 import React from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { Sprout, ShieldCheck, HeartHandshake, Leaf } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -13,8 +14,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   const { t } = useTranslation();
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground relative overflow-hidden">
-      {/* Absolute top-right Theme Toggle */}
-      <div className="absolute top-4 right-4 z-20">
+      {/* Absolute top-right controls */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 p-1 rounded-xl bg-card/70 backdrop-blur border border-border shadow-sm">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
