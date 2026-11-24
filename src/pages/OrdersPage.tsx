@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 import { Search, Filter, RefreshCw, CheckCircle2, Clock, Truck, XCircle, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from 'sonner';
 
 interface Order {
   id: number;
@@ -101,16 +102,17 @@ export default function OrdersPage() {
     setDeleteConfirmId(id);
   };
 
-  const handleConfirmDelete = async (id: number) => {
-    try {
-      await apiFetch(`/orders/${id}`, { method: 'DELETE' });
-      setDeleteConfirmId(null);
-      setOrders((prev) => prev.filter((ord) => ord.id !== id));
-    } catch (err) {
-      setDeleteConfirmId(null);
-      alert(err.message || 'Delete failed');
-    }
-  };
+ const handleConfirmDelete = async (id: number) => {
+  try {
+    await apiFetch(`/orders/${id}`, { method: 'DELETE' });
+    setDeleteConfirmId(null);
+    setOrders((prev) => prev.filter((ord) => ord.id !== id));
+  } catch (err) {
+    setDeleteConfirmId(null);
+    const message = err instanceof Error ? err.message : 'Delete failed';
+    toast.error(message);
+  }
+};
 
   return (
     <AdminLayout>
