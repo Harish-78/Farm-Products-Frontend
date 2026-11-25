@@ -12,6 +12,7 @@ import {
   Receipt,
   Wheat,
   Bird,
+  User,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -30,12 +31,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     toggleSidebarCollapsed,
   } = useUiStore();
 
+  const normalizedRole = String(user?.role || 'user').toLowerCase().trim();
+
   const navItems = [
     { to: '/', label: t('nav.overview'), icon: LayoutDashboard, end: true },
     { to: '/quails', label: t('nav.quails'), icon: Bird, end: false },
     { to: '/feeds', label: t('nav.feeds'), icon: Wheat, end: false },
     { to: '/expenses', label: t('nav.expenses'), icon: Receipt, end: false },
     { to: '/orders', label: t('nav.orders'), icon: ShoppingBag, end: false },
+    { to: '/users', label: t('nav.users'), icon: User, end: false },
   ];
 
   return (
@@ -167,7 +171,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               )}
               {!collapsed && (
                 <div className="truncate animate-in fade-in duration-150">
-                  <p className="text-xs font-semibold truncate leading-tight">{user?.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold truncate leading-tight">{user?.name}</p>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground font-medium uppercase">
+                      {normalizedRole}
+                    </span>
+                  </div>
                   <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
                 </div>
               )}

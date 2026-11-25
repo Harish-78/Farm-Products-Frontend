@@ -94,17 +94,44 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadData() {
       try {
         const res = await apiFetch<{ success: boolean } & PnLData>('/farm/pnl-summary');
-        setData(res);
+        if (!mounted) return;
+
+        const normalizedExpenses = (res.expenseBreakdown || []).map((item) => ({
+          category: String(item.category || 'Uncategorized').trim(),
+          total_amount: Number(item.total_amount || 0),
+          count: Number(item.count || 0),
+        }));
+
+        const normalizedOrderStatus = (res.orderStatusDistribution || []).map((item) => ({
+          order_status: String(item.order_status || 'UNKNOWN').toUpperCase().trim(),
+          count: Number(item.count || 0),
+          total_value: Number(item.total_value || 0),
+        }));
+
+        setData({
+          ...res,
+          expenseBreakdown: normalizedExpenses,
+          orderStatusDistribution: normalizedOrderStatus,
+        });
       } catch (err) {
         console.error('Failed to load P&L statistics', err);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
-    loadData();
+
+    void loadData();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -120,6 +147,8 @@ export default function DashboardPage() {
   const s = data?.summary;
   const isNetProfitPositive = (s?.netProfitInHand || 0) >= 0;
   const isTodayPositive = (s?.todayNetProfit || 0) >= 0;
+  const hasExpenses = (data?.expenseBreakdown || []).some((e) => Number(e.total_amount) > 0);
+  const hasOrderStatus = (data?.orderStatusDistribution || []).some((d) => Number(d.count) > 0);
 
   return (
     <AdminLayout>
@@ -296,29 +325,38 @@ export default function DashboardPage() {
               <CardDescription className="text-xs">{t('dashboard.expenseDistributionDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data?.expenseBreakdown || []}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={4}
-                    dataKey="total_amount"
-                    nameKey="category"
-                  >
-                    {(data?.expenseBreakdown || []).map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={PALETTE[index % PALETTE.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                    formatter={(val: any) => [`₹${Number(val).toLocaleString()}`, 'Total Spent']}
-                  />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              {hasExpenses ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data?.expenseBreakdown || []}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={50}
+                      outerRadius={75}
+                      paddingAngle={4}
+                      dataKey="total_amount"
+                      nameKey="category"
+                    >
+                      {(data?.expenseBreakdown || []).map((entry, index) => (
+                        <Cell key={`expense-${entry.category}-${index}`} fill={PALETTE[index % PALETTE.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                      formatter={(val: any, _name: any, item: any) => [
+                        `₹${Number(val || 0).toLocaleString()} (${Number(item?.payload?.count || 0)} items)`,
+                        item?.payload?.category || 'Expense',
+                      ]}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                  No expenses recorded yet to display distribution.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -381,35 +419,41 @@ export default function DashboardPage() {
               <CardDescription className="text-xs">Volume distribution of orders across delivery statuses</CardDescription>
             </CardHeader>
             <CardContent className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data?.orderStatusDistribution || []}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={45}
-                    outerRadius={65}
-                    paddingAngle={4}
-                    dataKey="count"
-                    nameKey="order_status"
-                  >
-                    {(data?.orderStatusDistribution || []).map((entry, index) => (
-                      <Cell
-                        key={`status-${index}`}
-                        fill={STATUS_COLORS[entry.order_status] || PALETTE[index % PALETTE.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
-                    formatter={(val: any, _name: any, item: any) => [
-                      `${val} Orders (₹${Number(item.payload.total_value).toLocaleString()})`,
-                      'Count',
-                    ]}
-                  />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
+              {hasOrderStatus ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data?.orderStatusDistribution || []}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={45}
+                      outerRadius={65}
+                      paddingAngle={4}
+                      dataKey="count"
+                      nameKey="order_status"
+                    >
+                      {(data?.orderStatusDistribution || []).map((entry, index) => (
+                        <Cell
+                          key={`status-${entry.order_status}-${index}`}
+                          fill={STATUS_COLORS[entry.order_status] || PALETTE[index % PALETTE.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                      formatter={(val: any, _name: any, item: any) => [
+                        `${Number(val)} Orders (₹${Number(item?.payload?.total_value || 0).toLocaleString()})`,
+                        item?.payload?.order_status || 'Orders',
+                      ]}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                  No active orders found to display status distribution.
+                </div>
+              )}
             </CardContent>
           </Card>
 

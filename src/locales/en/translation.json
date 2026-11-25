@@ -6,14 +6,17 @@
     "farmDescription": "Managing quails, feed consumption, operational expenses, and profit in hand.",
     "fromFarm": "From quail eggs and meat to feed inventory and dynamic expense tracking, Poongodi Farms ensures transparent farm profitability."
   },
+
   "nav": {
-    "overview": "Overview & P&L",
-    "quails": "Quails & Livestock",
-    "feeds": "Feeds & Inventory",
-    "expenses": "Expense Tracker",
-    "orders": "Orders & Sales",
+    "overview": "Overview",
+    "quails": "Quails",
+    "feeds": "Feeds",
+    "expenses": "Expenses",
+    "orders": "Orders",
+    "users": "Users",
     "signOut": "Sign Out"
-  },
+  }
+,
   "dashboard": {
     "title": "Farm Executive P&L Dashboard",
     "subtitle": "Quail inventory, automated feed depletion forecasting, dynamic expenses, and net profit in hand.",

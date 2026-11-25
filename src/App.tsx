@@ -12,6 +12,7 @@ import OrdersPage from '@/pages/OrdersPage';
 import QuailsPage from '@/pages/QuailsPage';
 import FeedsPage from '@/pages/FeedsPage';
 import ExpensesPage from '@/pages/ExpensesPage';
+import UsersPage from './pages/UsersPage';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/feeds" element={<FeedsPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/users" element={<UsersPage />} />
             </Route>
 
             {/* Unauthenticated / Guest only */}

@@ -2,8 +2,12 @@ import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import type { User } from '@/lib/api';
 
+type UserRole = 'admin' | 'user';
+
 interface AuthContextType {
   user: User | null;
+  role: UserRole;
+  isAdmin: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, otp: string) => Promise<void>;
@@ -15,12 +19,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * AuthProvider is now a thin React wrapper around the Zustand auth store
- * (`useAuthStore`). The store is the single source of truth for auth state and
- * persists the authenticated user to localStorage. All existing `useAuth()`
- * consumers continue to work unchanged.
- */
+function resolveUserRole(user: User | null): UserRole {
+  return String(user?.role || '').toLowerCase().trim() === 'admin' ? 'admin' : 'user';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const {
     user,
@@ -33,19 +35,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
   } = useAuthStore();
 
-  // Re-hydrate/confirm the session from the server cookie on mount.
   useEffect(() => {
+    let mounted = true;
     const init = async () => {
+      if (!mounted) return;
       await refreshUser();
-      // `loading` is reset to false inside refreshUser.
     };
-    init();
+    void init();
+    return () => {
+      mounted = false;
+    };
   }, [refreshUser]);
+
+  const role = resolveUserRole(user);
+  const isAdmin = role === 'admin';
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        role,
+        isAdmin,
         loading,
         login,
         signup,
