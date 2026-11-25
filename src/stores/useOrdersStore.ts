@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { apiFetch } from '@/lib/api';
+import { create } from "zustand";
+import { apiFetch } from "@/lib/api";
 
 export interface Order {
   id: number;
@@ -12,11 +12,13 @@ export interface Order {
   quantity: number;
   unit_price: number;
   total_amount: number;
-  payment_status: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
-  order_status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  payment_status: "PAID" | "PENDING" | "FAILED" | "REFUNDED";
+  order_status: "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
   shipping_address: string;
   created_at: string;
 }
+
+export type CreateOrderPayload = Omit<Order, "id" | "created_at">;
 
 interface OrdersState {
   orders: Order[];
@@ -28,9 +30,10 @@ interface OrdersState {
   setSearch: (search: string) => void;
   setStatusFilter: (statusFilter: string) => void;
   fetchOrders: () => Promise<void>;
+  createOrder: (payload: CreateOrderPayload) => Promise<Order>;
   updateOrderStatus: (
     orderId: number,
-    newStatus: Order['order_status']
+    newStatus: Order["order_status"],
   ) => Promise<void>;
   deleteOrder: (id: number) => Promise<void>;
 }
@@ -38,8 +41,8 @@ interface OrdersState {
 export const useOrdersStore = create<OrdersState>((set, get) => ({
   orders: [],
   loading: true,
-  search: '',
-  statusFilter: 'ALL',
+  search: "",
+  statusFilter: "ALL",
 
   setOrders: (orders) => set({ orders }),
   setLoading: (loading) => set({ loading }),
@@ -50,10 +53,12 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     set({ loading: true });
     try {
       const queryParams = new URLSearchParams();
-      if (get().statusFilter !== 'ALL') queryParams.append('status', get().statusFilter);
-      if (get().search.trim()) queryParams.append('search', get().search.trim());
+      if (get().statusFilter !== "ALL")
+        queryParams.append("status", get().statusFilter);
+      if (get().search.trim())
+        queryParams.append("search", get().search.trim());
       const res = await apiFetch<{ success: boolean; orders: Order[] }>(
-        `/orders?${queryParams.toString()}`
+        `/orders?${queryParams.toString()}`,
       );
       set({ orders: res.orders || [], loading: false });
     } catch {
@@ -61,21 +66,34 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
     }
   },
 
+  createOrder: async (payload) => {
+    const res = await apiFetch<{ success: boolean; order: Order }>("/orders", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    // Optimistically prepend the new order, then refresh from server
+    if (res.order) {
+      set((prev) => ({ orders: [res.order, ...prev.orders] }));
+    }
+    await get().fetchOrders();
+    return res.order;
+  },
+
   updateOrderStatus: async (orderId, newStatus) => {
     await apiFetch(`/orders/${orderId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify({ order_status: newStatus }),
     });
     set((prev) => ({
       orders: prev.orders.map((ord) =>
-        ord.id === orderId ? { ...ord, order_status: newStatus } : ord
+        ord.id === orderId ? { ...ord, order_status: newStatus } : ord,
       ),
     }));
     await get().fetchOrders();
   },
 
   deleteOrder: async (id) => {
-    await apiFetch(`/orders/${id}`, { method: 'DELETE' });
+    await apiFetch(`/orders/${id}`, { method: "DELETE" });
     set((prev) => ({ orders: prev.orders.filter((ord) => ord.id !== id) }));
     await get().fetchOrders();
   },

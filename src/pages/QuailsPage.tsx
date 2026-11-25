@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLivestockStore } from '@/stores/useLivestockStore';
-import { Bird, Plus, RefreshCw, Edit, Check, Trash2 } from 'lucide-react';
+import { Bird, Plus, RefreshCw, Edit, Check, Trash2, ChevronDown, Loader2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 function getErrorMessage(err: unknown, fallback: string): string {
@@ -38,41 +38,93 @@ export default function QuailsPage() {
   const [mortalityCount, setMortalityCount] = useState<number>(0);
   const [feedGrams, setFeedGrams] = useState<number>(28);
   const [notes, setNotes] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Inline edit state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editCount, setEditCount] = useState<number>(0);
   const [editMortality, setEditMortality] = useState<number>(0);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const handleRefresh = useCallback(() => {
     void fetchBatches();
   }, [fetchBatches]);
 
+  const validateCreateForm = useCallback((): string | null => {
+    if (!batchName.trim()) {
+      return 'Batch name / shed identifier is required.';
+    }
+    if (Number.isNaN(Number(currentCount)) || Number(currentCount) <= 0) {
+      return 'Live bird count must be greater than 0.';
+    }
+    if (Number.isNaN(Number(feedGrams)) || Number(feedGrams) <= 0) {
+      return 'Feed per bird must be greater than 0 grams per day.';
+    }
+    if (Number.isNaN(Number(mortalityCount)) || Number(mortalityCount) < 0) {
+      return 'Mortality count cannot be negative.';
+    }
+    if (Number(mortalityCount) > Number(currentCount)) {
+      return 'Mortality count cannot exceed live bird count.';
+    }
+    return null;
+  }, [batchName, currentCount, feedGrams, mortalityCount]);
+
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isCreating) return;
+
+      const validationMessage = validateCreateForm();
+      if (validationMessage) {
+        setFormError(validationMessage);
+        return;
+      }
+
+      setFormError(null);
+      setIsCreating(true);
+
       try {
         await createBatch({
           animal_type: animalType,
-          batch_name: batchName,
+          batch_name: batchName.trim(),
           current_count: Number(currentCount),
           mortality_count: Number(mortalityCount),
           avg_daily_feed_per_bird_grams: Number(feedGrams),
-          notes,
+          notes: notes.trim(),
         });
         setShowAddModal(false);
         setBatchName('');
         setNotes('');
+        setFormError(null);
       } catch (err: unknown) {
-        alert(getErrorMessage(err, 'Failed to add flock'));
+        setFormError(getErrorMessage(err, 'Failed to add flock'));
+      } finally {
+        setIsCreating(false);
       }
     },
-    [animalType, batchName, currentCount, mortalityCount, feedGrams, notes, createBatch],
+    [isCreating, validateCreateForm, createBatch, animalType, batchName, currentCount, mortalityCount, feedGrams, notes],
   );
 
   const handleSaveEdit = useCallback(
     async (id: number) => {
+      if (updatingId !== null) return;
+
+      if (Number.isNaN(Number(editCount)) || Number(editCount) < 0) {
+        alert('Live bird count cannot be negative.');
+        return;
+      }
+      if (Number.isNaN(Number(editMortality)) || Number(editMortality) < 0) {
+        alert('Mortality count cannot be negative.');
+        return;
+      }
+      if (Number(editMortality) > Number(editCount)) {
+        alert('Mortality count cannot exceed live bird count.');
+        return;
+      }
+
+      setUpdatingId(id);
       try {
         await updateBatch(id, {
           current_count: Number(editCount),
@@ -81,9 +133,11 @@ export default function QuailsPage() {
         setEditingId(null);
       } catch (err: unknown) {
         alert(getErrorMessage(err, 'Update failed'));
+      } finally {
+        setUpdatingId(null);
       }
     },
-    [editCount, editMortality, updateBatch],
+    [updatingId, editCount, editMortality, updateBatch],
   );
 
   const handleDelete = useCallback((id: number) => {
@@ -124,6 +178,7 @@ export default function QuailsPage() {
             <Button
               variant="outline"
               size="sm"
+              disabled={loading || isCreating || updatingId !== null}
               onClick={handleRefresh}
               className="gap-1.5 flex-1 sm:flex-initial justify-center"
             >
@@ -131,7 +186,11 @@ export default function QuailsPage() {
             </Button>
             <Button
               size="sm"
-              onClick={() => setShowAddModal(!showAddModal)}
+              disabled={isCreating}
+              onClick={() => {
+                setFormError(null);
+                setShowAddModal((prev) => !prev);
+              }}
               className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white flex-1 sm:flex-initial justify-center"
             >
               <Plus className="h-4 w-4" /> Add Flock / Batch
@@ -190,28 +249,42 @@ export default function QuailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreate} className="space-y-4">
+              <form onSubmit={handleCreate} noValidate className="space-y-4">
+                {formError && (
+                  <div className="p-2.5 rounded-md bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20">
+                    {formError}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold">Animal / Category</Label>
-                    <select
-                      value={animalType}
-                      onChange={(e) => setAnimalType(e.target.value)}
-                      className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="Quail">Quail (Japanese / Coturnix)</option>
-                      <option value="Country Chicken">Country Chicken (Nattu Kozhi)</option>
-                      <option value="Duck">Duck / Kadaknath</option>
-                      <option value="Other">Other Livestock</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={animalType}
+                        disabled={isCreating}
+                        onChange={(e) => setAnimalType(e.target.value)}
+                        className="w-full h-9 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="Quail">Quail</option>
+                        <option value="Country Chicken">Country Chicken</option>
+                        <option value="Duck">Duck</option>
+                        <option value="Other">Other Livestock</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-xs font-semibold">Batch Name / Shed Identifier</Label>
                     <Input
-                      placeholder="e.g. Shed 1 - Layer Quails Batch A"
+                      placeholder="e.g. North Shed - Batch 01"
                       value={batchName}
-                      onChange={(e) => setBatchName(e.target.value)}
+                      disabled={isCreating}
+                      onChange={(e) => {
+                        setBatchName(e.target.value);
+                        if (formError) setFormError(null);
+                      }}
                       required
                     />
                   </div>
@@ -222,8 +295,14 @@ export default function QuailsPage() {
                     <Label className="text-xs font-semibold">Live Bird Count</Label>
                     <Input
                       type="number"
+                      min="1"
+                      placeholder="e.g. 250"
                       value={currentCount}
-                      onChange={(e) => setCurrentCount(Number(e.target.value))}
+                      disabled={isCreating}
+                      onChange={(e) => {
+                        setCurrentCount(Number(e.target.value));
+                        if (formError) setFormError(null);
+                      }}
                       required
                     />
                   </div>
@@ -233,9 +312,14 @@ export default function QuailsPage() {
                     <Input
                       type="number"
                       step="0.5"
+                      min="0.5"
+                      placeholder="e.g. 25"
                       value={feedGrams}
-                      onChange={(e) => setFeedGrams(Number(e.target.value))}
-                      placeholder="28g standard for quails"
+                      disabled={isCreating}
+                      onChange={(e) => {
+                        setFeedGrams(Number(e.target.value));
+                        if (formError) setFormError(null);
+                      }}
                       required
                     />
                   </div>
@@ -244,27 +328,54 @@ export default function QuailsPage() {
                     <Label className="text-xs font-semibold">Mortality Count</Label>
                     <Input
                       type="number"
+                      min="0"
+                      placeholder="e.g. 0"
                       value={mortalityCount}
-                      onChange={(e) => setMortalityCount(Number(e.target.value))}
+                      disabled={isCreating}
+                      onChange={(e) => {
+                        setMortalityCount(Number(e.target.value));
+                        if (formError) setFormError(null);
+                      }}
                     />
                   </div>
 
                   <div className="space-y-1.5 sm:col-span-3">
                     <Label className="text-xs font-semibold">Notes / Shed Remarks (Optional)</Label>
                     <Input
-                      placeholder="e.g. Vaccinated on day 14, high laying rate"
+                      placeholder="e.g. Routine health check completed"
                       value={notes}
+                      disabled={isCreating}
                       onChange={(e) => setNotes(e.target.value)}
                     />
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAddModal(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isCreating}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setFormError(null);
+                    }}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                    Save Flock Batch
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={isCreating}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[136px]"
+                  >
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Saving...
+                      </>
+                    ) : (
+                      'Save Flock Batch'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -299,6 +410,8 @@ export default function QuailsPage() {
                     const mortality = Number(b.mortality_count || 0);
                     const dailyFeedKg = Number(b.calculated_daily_feed_kg || 0);
                     const feedPerBirdGrams = Number(b.avg_daily_feed_per_bird_grams || 0);
+                    const isEditingThis = editingId === b.id;
+                    const isUpdatingThis = updatingId === b.id;
 
                     return (
                       <tr key={b.id} className="hover:bg-muted/40 transition-colors">
@@ -314,11 +427,14 @@ export default function QuailsPage() {
                           </span>
                         </td>
                         <td className="py-4 px-2">
-                          {editingId === b.id ? (
+                          {isEditingThis ? (
                             <Input
                               type="number"
+                              min="0"
+                              placeholder="Count"
                               className="w-24 h-8 text-xs"
                               value={editCount}
+                              disabled={isUpdatingThis}
                               onChange={(e) => setEditCount(Number(e.target.value))}
                             />
                           ) : (
@@ -332,11 +448,14 @@ export default function QuailsPage() {
                           <div className="text-[10px] text-muted-foreground">({feedPerBirdGrams}g / bird)</div>
                         </td>
                         <td className="py-4 px-2">
-                          {editingId === b.id ? (
+                          {isEditingThis ? (
                             <Input
                               type="number"
+                              min="0"
+                              placeholder="Mortality"
                               className="w-20 h-8 text-xs"
                               value={editMortality}
+                              disabled={isUpdatingThis}
                               onChange={(e) => setEditMortality(Number(e.target.value))}
                             />
                           ) : (
@@ -344,20 +463,30 @@ export default function QuailsPage() {
                           )}
                         </td>
                         <td className="py-4 px-4 sm:px-0 text-right">
-                          {editingId === b.id ? (
+                          {isEditingThis ? (
                             <Button
                               size="sm"
                               variant="default"
-                              className="h-8 gap-1 bg-emerald-600 text-white"
+                              disabled={isUpdatingThis}
+                              className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white min-w-[84px]"
                               onClick={() => void handleSaveEdit(b.id)}
                             >
-                              <Check className="h-3.5 w-3.5" /> Save
+                              {isUpdatingThis ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-3.5 w-3.5" /> Save
+                                </>
+                              )}
                             </Button>
                           ) : (
                             <>
                               <Button
                                 size="sm"
                                 variant="outline"
+                                disabled={updatingId !== null}
                                 className="h-8 gap-1 text-xs mr-2"
                                 onClick={() => {
                                   setEditingId(b.id);
@@ -370,6 +499,7 @@ export default function QuailsPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                disabled={updatingId !== null}
                                 onClick={() => handleDelete(b.id)}
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                 title="Delete Batch"

@@ -1,78 +1,50 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { apiFetch } from '@/lib/api';
-import { Search, Filter, RefreshCw, CheckCircle2, Clock, Truck, XCircle, Trash2 } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  Truck,
+  XCircle,
+  Trash2,
+  Plus,
+  ChevronDown,
+} from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { OrderFormDialog } from '@/components/OrderFormDialog';
 import { toast } from 'sonner';
-
-interface Order {
-  id: number;
-  order_number: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  product_name: string;
-  category: string;
-  quantity: number;
-  unit_price: number;
-  total_amount: number;
-  payment_status: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED';
-  order_status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-  shipping_address: string;
-  created_at: string;
-}
+import { useOrdersStore } from '@/stores';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const orders = useOrdersStore((s) => s.orders);
+  const loading = useOrdersStore((s) => s.loading);
+  const search = useOrdersStore((s) => s.search);
+  const statusFilter = useOrdersStore((s) => s.statusFilter);
+  const setSearch = useOrdersStore((s) => s.setSearch);
+  const setStatusFilter = useOrdersStore((s) => s.setStatusFilter);
+  const fetchOrders = useOrdersStore((s) => s.fetchOrders);
+  const updateOrderStatus = useOrdersStore((s) => s.updateOrderStatus);
+  const deleteOrder = useOrdersStore((s) => s.deleteOrder);
+
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    try {
-      const queryParams = new URLSearchParams();
-      if (statusFilter !== 'ALL') queryParams.append('status', statusFilter);
-      if (search.trim()) queryParams.append('search', search.trim());
-
-      const res = await apiFetch<{ success: boolean; orders: Order[] }>(
-        `/orders?${queryParams.toString()}`
-      );
-      setOrders(res.orders || []);
-    } catch (err) {
-      console.error('Failed to fetch orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, search]);
-
+  // Fetch whenever the status filter changes
   useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const queryParams = new URLSearchParams();
-        if (statusFilter !== 'ALL') queryParams.append('status', statusFilter);
-
-        const res = await apiFetch<{ success: boolean; orders: Order[] }>(
-          `/orders?${queryParams.toString()}`
-        );
-        if (!ignore) setOrders(res.orders || []);
-      } catch (err) {
-        console.error('Failed to fetch orders:', err);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
+    fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -83,36 +55,29 @@ export default function OrdersPage() {
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
     setUpdatingId(orderId);
     try {
-      await apiFetch(`/orders/${orderId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ order_status: newStatus }),
-      });
-      // Update local state
-      setOrders((prev) =>
-        prev.map((ord) => (ord.id === orderId ? { ...ord, order_status: newStatus as any } : ord))
-      );
+      await updateOrderStatus(orderId, newStatus as any);
+      toast.success('Order status updated');
     } catch (err) {
-      console.error('Failed to update status', err);
+      const message = err instanceof Error ? err.message : 'Update failed';
+      toast.error(message);
     } finally {
       setUpdatingId(null);
     }
   };
 
-  const handleDelete = (id: number) => {
-    setDeleteConfirmId(id);
-  };
+  const handleDelete = (id: number) => setDeleteConfirmId(id);
 
- const handleConfirmDelete = async (id: number) => {
-  try {
-    await apiFetch(`/orders/${id}`, { method: 'DELETE' });
-    setDeleteConfirmId(null);
-    setOrders((prev) => prev.filter((ord) => ord.id !== id));
-  } catch (err) {
-    setDeleteConfirmId(null);
-    const message = err instanceof Error ? err.message : 'Delete failed';
-    toast.error(message);
-  }
-};
+  const handleConfirmDelete = async (id: number) => {
+    try {
+      await deleteOrder(id);
+      toast.success('Order deleted');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Delete failed';
+      toast.error(message);
+    } finally {
+      setDeleteConfirmId(null);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -120,23 +85,43 @@ export default function OrdersPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Orders Management</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              Orders Management
+            </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Manage, search, and update delivery status for all Poongodi Farm Products orders.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchOrders} className="gap-2 w-full sm:w-auto justify-center">
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+              className="gap-2 flex-1 sm:flex-none justify-center"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Order
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchOrders}
+              className="gap-2 flex-1 sm:flex-none justify-center"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Filter and Search Bar */}
         <Card className="border-border">
           <CardContent className="p-4 sm:p-6 space-y-4">
             <div className="flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
-              {/* Search input */}
-              <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full md:w-80">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex items-center gap-2 w-full md:w-80"
+              >
                 <div className="relative w-full">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -151,24 +136,25 @@ export default function OrdersPage() {
                 </Button>
               </form>
 
-              {/* Status Tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 <span className="text-xs text-muted-foreground font-medium flex items-center gap-1 mr-1 shrink-0">
                   <Filter className="h-3.5 w-3.5" /> Filter:
                 </span>
-                {['ALL', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={`px-2.5 py-1 text-xs rounded-md font-medium shrink-0 transition-colors ${
-                      statusFilter === status
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
+                {['ALL', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      onClick={() => setStatusFilter(status)}
+                      className={`px-2.5 py-1 text-xs rounded-md font-medium shrink-0 transition-colors ${
+                        statusFilter === status
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      {status}
+                    </button>
+                  )
+                )}
               </div>
             </div>
           </CardContent>
@@ -177,8 +163,12 @@ export default function OrdersPage() {
         {/* Orders Table */}
         <Card className="border-border">
           <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-sm sm:text-base font-semibold">Orders List ({orders.length})</CardTitle>
-            <CardDescription className="text-xs">Live orders stored in PostgreSQL</CardDescription>
+            <CardTitle className="text-sm sm:text-base font-semibold">
+              Orders List ({orders.length})
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Live orders stored in PostgreSQL
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0 sm:p-6">
             {loading ? (
@@ -187,7 +177,9 @@ export default function OrdersPage() {
               </div>
             ) : orders.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <p className="text-sm">No orders found matching the filter criteria.</p>
+                <p className="text-sm">
+                  No orders found matching the filter criteria.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -201,7 +193,9 @@ export default function OrdersPage() {
                       <th className="pb-3 px-2 font-medium">Total Amount</th>
                       <th className="pb-3 px-2 font-medium">Payment</th>
                       <th className="pb-3 px-2 font-medium">Status</th>
-                      <th className="pb-3 px-4 sm:px-0 font-medium text-right">Quick Action</th>
+                      <th className="pb-3 px-4 sm:px-0 font-medium text-right">
+                        Quick Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -214,8 +208,12 @@ export default function OrdersPage() {
                           </div>
                         </td>
                         <td className="py-4 px-2">
-                          <p className="font-semibold text-xs leading-none">{ord.customer_name}</p>
-                          <p className="text-[11px] text-muted-foreground mt-1">{ord.customer_phone}</p>
+                          <p className="font-semibold text-xs leading-none">
+                            {ord.customer_name}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            {ord.customer_phone}
+                          </p>
                           <p className="text-[11px] text-muted-foreground truncate max-w-[160px]">
                             {ord.shipping_address}
                           </p>
@@ -226,8 +224,12 @@ export default function OrdersPage() {
                             {ord.category}
                           </span>
                         </td>
-                        <td className="py-4 px-2 text-xs font-medium">{ord.quantity}x</td>
-                        <td className="py-4 px-2 font-semibold text-xs sm:text-sm">₹{Number(ord.total_amount).toLocaleString()}</td>
+                        <td className="py-4 px-2 text-xs font-medium">
+                          {ord.quantity}x
+                        </td>
+                        <td className="py-4 px-2 font-semibold text-xs sm:text-sm">
+                          ₹{Number(ord.total_amount).toLocaleString()}
+                        </td>
                         <td className="py-4 px-2">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-medium ${
@@ -251,26 +253,39 @@ export default function OrdersPage() {
                                 : 'bg-destructive/10 text-destructive'
                             }`}
                           >
-                            {ord.order_status === 'DELIVERED' && <CheckCircle2 className="h-3 w-3" />}
-                            {ord.order_status === 'SHIPPED' && <Truck className="h-3 w-3" />}
-                            {ord.order_status === 'PROCESSING' && <Clock className="h-3 w-3" />}
-                            {ord.order_status === 'CANCELLED' && <XCircle className="h-3 w-3" />}
+                            {ord.order_status === 'DELIVERED' && (
+                              <CheckCircle2 className="h-3 w-3" />
+                            )}
+                            {ord.order_status === 'SHIPPED' && (
+                              <Truck className="h-3 w-3" />
+                            )}
+                            {ord.order_status === 'PROCESSING' && (
+                              <Clock className="h-3 w-3" />
+                            )}
+                            {ord.order_status === 'CANCELLED' && (
+                              <XCircle className="h-3 w-3" />
+                            )}
                             {ord.order_status}
                           </span>
                         </td>
                         <td className="py-4 px-4 sm:px-0 text-right">
-                          <div className="flex items-center gap-1">
-                            <select
-                              disabled={updatingId === ord.id}
-                              value={ord.order_status}
-                              onChange={(e) => handleUpdateStatus(ord.id, e.target.value)}
-                              className="text-xs bg-card border border-border rounded px-2 py-1 outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                            >
-                              <option value="PROCESSING">Mark Processing</option>
-                              <option value="SHIPPED">Mark Shipped</option>
-                              <option value="DELIVERED">Mark Delivered</option>
-                              <option value="CANCELLED">Mark Cancelled</option>
-                            </select>
+                          <div className="flex items-center justify-end gap-1">
+                            <div className="relative">
+                              <select
+                                disabled={updatingId === ord.id}
+                                value={ord.order_status}
+                                onChange={(e) =>
+                                  handleUpdateStatus(ord.id, e.target.value)
+                                }
+                                className="text-xs bg-card border border-border rounded pl-2 pr-7 py-1 appearance-none outline-none focus:ring-1 focus:ring-primary cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                              >
+                                <option value="PROCESSING">Mark Processing</option>
+                                <option value="SHIPPED">Mark Shipped</option>
+                                <option value="DELIVERED">Mark Delivered</option>
+                                <option value="CANCELLED">Mark Cancelled</option>
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                            </div>
                             <Button
                               size="sm"
                               variant="ghost"
@@ -292,6 +307,10 @@ export default function OrdersPage() {
         </Card>
       </div>
 
+      {/* Create Order Dialog */}
+      <OrderFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+
+      {/* Delete Confirmation */}
       {deleteConfirmId && (
         <ConfirmDialog
           open={true}
