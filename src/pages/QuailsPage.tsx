@@ -119,7 +119,7 @@ export default function QuailsPage() {
         alert('Mortality count cannot be negative.');
         return;
       }
-      if (Number(editMortality) > Number(editCount)) {
+      if (Number.isNaN(Number(editMortality)) || Number(editMortality) > Number(editCount)) {
         alert('Mortality count cannot exceed live bird count.');
         return;
       }
@@ -392,129 +392,135 @@ export default function QuailsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0 sm:p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm min-w-[700px]">
-                <thead>
-                  <tr className="border-b border-border text-xs uppercase text-muted-foreground">
-                    <th className="pb-3 px-4 sm:px-0 font-medium">Batch / Shed Name</th>
-                    <th className="pb-3 px-2 font-medium">Animal Type</th>
-                    <th className="pb-3 px-2 font-medium">Live Quails Count</th>
-                    <th className="pb-3 px-2 font-medium">Daily Feed Need</th>
-                    <th className="pb-3 px-2 font-medium">Mortality</th>
-                    <th className="pb-3 px-4 sm:px-0 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {batches.map((b) => {
-                    const liveCount = Number(b.current_count || 0);
-                    const mortality = Number(b.mortality_count || 0);
-                    const dailyFeedKg = Number(b.calculated_daily_feed_kg || 0);
-                    const feedPerBirdGrams = Number(b.avg_daily_feed_per_bird_grams || 0);
-                    const isEditingThis = editingId === b.id;
-                    const isUpdatingThis = updatingId === b.id;
+            {loading && batches.length === 0 ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-primary" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-border text-xs uppercase text-muted-foreground">
+                      <th className="pb-3 px-4 sm:px-0 font-medium">Batch / Shed Name</th>
+                      <th className="pb-3 px-2 font-medium">Animal Type</th>
+                      <th className="pb-3 px-2 font-medium">Live Quails Count</th>
+                      <th className="pb-3 px-2 font-medium">Daily Feed Need</th>
+                      <th className="pb-3 px-2 font-medium">Mortality</th>
+                      <th className="pb-3 px-4 sm:px-0 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {batches.map((b) => {
+                      const liveCount = Number(b.current_count || 0);
+                      const mortality = Number(b.mortality_count || 0);
+                      const dailyFeedKg = Number(b.calculated_daily_feed_kg || 0);
+                      const feedPerBirdGrams = Number(b.avg_daily_feed_per_bird_grams || 0);
+                      const isEditingThis = editingId === b.id;
+                      const isUpdatingThis = updatingId === b.id;
 
-                    return (
-                      <tr key={b.id} className="hover:bg-muted/40 transition-colors">
-                        <td className="py-4 px-4 sm:px-0 font-medium">
-                          <div className="font-semibold text-sm">{b.batch_name}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {new Date(b.created_at).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="py-4 px-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <Bird className="h-3 w-3" /> {b.animal_type}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2">
-                          {isEditingThis ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="Count"
-                              className="w-24 h-8 text-xs"
-                              value={editCount}
-                              disabled={isUpdatingThis}
-                              onChange={(e) => setEditCount(Number(e.target.value))}
-                            />
-                          ) : (
-                            <span className="font-bold text-base text-foreground">{liveCount.toLocaleString()}</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-2">
-                          <span className="font-semibold text-blue-600 dark:text-blue-400">
-                            {dailyFeedKg.toFixed(2)} kg/day
-                          </span>
-                          <div className="text-[10px] text-muted-foreground">({feedPerBirdGrams}g / bird)</div>
-                        </td>
-                        <td className="py-4 px-2">
-                          {isEditingThis ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="Mortality"
-                              className="w-20 h-8 text-xs"
-                              value={editMortality}
-                              disabled={isUpdatingThis}
-                              onChange={(e) => setEditMortality(Number(e.target.value))}
-                            />
-                          ) : (
-                            <span className="text-amber-600 font-medium text-sm">{mortality}</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-4 sm:px-0 text-right">
-                          {isEditingThis ? (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              disabled={isUpdatingThis}
-                              className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white min-w-[84px]"
-                              onClick={() => void handleSaveEdit(b.id)}
-                            >
-                              {isUpdatingThis ? (
-                                <>
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="h-3.5 w-3.5" /> Save
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <>
+                      return (
+                        <tr key={b.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="py-4 px-4 sm:px-0 font-medium">
+                            <div className="font-semibold text-sm">{b.batch_name}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {new Date(b.created_at).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              <Bird className="h-3 w-3" /> {b.animal_type}
+                            </span>
+                          </td>
+                          <td className="py-4 px-2">
+                            {isEditingThis ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder="Count"
+                                className="w-24 h-8 text-xs"
+                                value={editCount}
+                                disabled={isUpdatingThis}
+                                onChange={(e) => setEditCount(Number(e.target.value))}
+                              />
+                            ) : (
+                              <span className="font-bold text-base text-foreground">{liveCount.toLocaleString()}</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-2">
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                              {dailyFeedKg.toFixed(2)} kg/day
+                            </span>
+                            <div className="text-[10px] text-muted-foreground">({feedPerBirdGrams}g / bird)</div>
+                          </td>
+                          <td className="py-4 px-2">
+                            {isEditingThis ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                placeholder="Mortality"
+                                className="w-20 h-8 text-xs"
+                                value={editMortality}
+                                disabled={isUpdatingThis}
+                                onChange={(e) => setEditMortality(Number(e.target.value))}
+                              />
+                            ) : (
+                              <span className="text-amber-600 font-medium text-sm">{mortality}</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 sm:px-0 text-right">
+                            {isEditingThis ? (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                disabled={updatingId !== null}
-                                className="h-8 gap-1 text-xs mr-2"
-                                onClick={() => {
-                                  setEditingId(b.id);
-                                  setEditCount(liveCount);
-                                  setEditMortality(mortality);
-                                }}
+                                variant="default"
+                                disabled={isUpdatingThis}
+                                className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white min-w-[84px]"
+                                onClick={() => void handleSaveEdit(b.id)}
                               >
-                                <Edit className="h-3 w-3" /> Quick Edit
+                                {isUpdatingThis ? (
+                                  <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="h-3.5 w-3.5" /> Save
+                                  </>
+                                )}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                disabled={updatingId !== null}
-                                onClick={() => handleDelete(b.id)}
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                title="Delete Batch"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            ) : (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={updatingId !== null}
+                                  className="h-8 gap-1 text-xs mr-2"
+                                  onClick={() => {
+                                    setEditingId(b.id);
+                                    setEditCount(liveCount);
+                                    setEditMortality(mortality);
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3" /> Quick Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={updatingId !== null}
+                                  onClick={() => handleDelete(b.id)}
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  title="Delete Batch"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

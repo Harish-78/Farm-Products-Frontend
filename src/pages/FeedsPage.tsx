@@ -25,7 +25,7 @@ interface FeedItem {
 
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState<FeedItem[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [alertSuccessMsg, setAlertSuccessMsg] = useState('');
 
@@ -405,120 +405,126 @@ export default function FeedsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0 sm:p-6">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm min-w-[700px]">
-                <thead>
-                  <tr className="border-b border-border text-xs uppercase text-muted-foreground">
-                    <th className="pb-3 px-4 sm:px-0 font-medium">Feed Description</th>
-                    <th className="pb-3 px-2 font-medium">Stock in Warehouse</th>
-                    <th className="pb-3 px-2 font-medium">Daily Consumption</th>
-                    <th className="pb-3 px-2 font-medium">Cost / kg</th>
-                    <th className="pb-3 px-2 font-medium">Runway Status</th>
-                    <th className="pb-3 px-4 sm:px-0 font-medium text-right">Quick Stock Update</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {feeds.map((f) => {
-                    const isEditingThis = editingId === f.id;
-                    const isUpdatingThis = updatingId === f.id;
+            {loading && feeds.length === 0 ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-primary" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-border text-xs uppercase text-muted-foreground">
+                      <th className="pb-3 px-4 sm:px-0 font-medium">Feed Description</th>
+                      <th className="pb-3 px-2 font-medium">Stock in Warehouse</th>
+                      <th className="pb-3 px-2 font-medium">Daily Consumption</th>
+                      <th className="pb-3 px-2 font-medium">Cost / kg</th>
+                      <th className="pb-3 px-2 font-medium">Runway Status</th>
+                      <th className="pb-3 px-4 sm:px-0 font-medium text-right">Quick Stock Update</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {feeds.map((f) => {
+                      const isEditingThis = editingId === f.id;
+                      const isUpdatingThis = updatingId === f.id;
 
-                    return (
-                      <tr key={f.id} className="hover:bg-muted/40 transition-colors">
-                        <td className="py-4 px-4 sm:px-0 font-medium">
-                          <div className="font-semibold text-sm flex items-center gap-1.5">
-                            <Wheat className="h-4 w-4 text-amber-500" /> {f.feed_name}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            For: {f.target_animal} | Supplier: {f.supplier_name || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="py-4 px-2">
-                          {isEditingThis ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              placeholder="Qty (kg)"
-                              className="w-24 h-8 text-xs"
-                              value={editStock}
-                              disabled={isUpdatingThis}
-                              onChange={(e) => setEditStock(Number(e.target.value))}
-                            />
-                          ) : (
-                            <span className="font-bold text-base text-foreground">{Number(f.current_stock_kg).toLocaleString()} kg</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-2">
-                          <span className="font-semibold text-blue-600 dark:text-blue-400">{f.daily_consumption_kg.toFixed(1)} kg / day</span>
-                        </td>
-                        <td className="py-4 px-2 font-medium">₹{f.cost_per_kg} / kg</td>
-                        <td className="py-4 px-2">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold ${
-                              f.is_low_stock
-                                ? 'bg-destructive/15 text-destructive border border-destructive/25'
-                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                            }`}
-                          >
-                            {f.is_low_stock && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
-                            {f.days_remaining} Days Remaining
-                          </span>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            {f.is_low_stock ? 'Alert active (less than or equal to 10 days)' : 'Healthy stock'}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 sm:px-0 text-right">
-                          {isEditingThis ? (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              disabled={isUpdatingThis}
-                              className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white min-w-[96px]"
-                              onClick={() => handleSaveStock(f.id)}
+                      return (
+                        <tr key={f.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="py-4 px-4 sm:px-0 font-medium">
+                            <div className="font-semibold text-sm flex items-center gap-1.5">
+                              <Wheat className="h-4 w-4 text-amber-500" /> {f.feed_name}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              For: {f.target_animal} | Supplier: {f.supplier_name || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="py-4 px-2">
+                            {isEditingThis ? (
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                placeholder="Qty (kg)"
+                                className="w-24 h-8 text-xs"
+                                value={editStock}
+                                disabled={isUpdatingThis}
+                                onChange={(e) => setEditStock(Number(e.target.value))}
+                              />
+                            ) : (
+                              <span className="font-bold text-base text-foreground">{Number(f.current_stock_kg).toLocaleString()} kg</span>
+                            )}
+                          </td>
+                          <td className="py-4 px-2">
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">{f.daily_consumption_kg.toFixed(1)} kg / day</span>
+                          </td>
+                          <td className="py-4 px-2 font-medium">₹{f.cost_per_kg} / kg</td>
+                          <td className="py-4 px-2">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold ${
+                                f.is_low_stock
+                                  ? 'bg-destructive/15 text-destructive border border-destructive/25'
+                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              }`}
                             >
-                              {isUpdatingThis ? (
-                                <>
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="h-3.5 w-3.5" /> Save Stock
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <>
+                              {f.is_low_stock && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
+                              {f.days_remaining} Days Remaining
+                            </span>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {f.is_low_stock ? 'Alert active (less than or equal to 10 days)' : 'Healthy stock'}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 sm:px-0 text-right">
+                            {isEditingThis ? (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                disabled={updatingId !== null}
-                                className="h-8 gap-1 text-xs mr-2"
-                                onClick={() => {
-                                  setEditingId(f.id);
-                                  setEditStock(Number(f.current_stock_kg));
-                                }}
+                                variant="default"
+                                disabled={isUpdatingThis}
+                                className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white min-w-[96px]"
+                                onClick={() => handleSaveStock(f.id)}
                               >
-                                <Edit className="h-3 w-3" /> Update Stock
+                                {isUpdatingThis ? (
+                                  <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="h-3.5 w-3.5" /> Save Stock
+                                  </>
+                                )}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                disabled={updatingId !== null}
-                                onClick={() => handleDelete(f.id)}
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                title="Delete Feed Item"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            ) : (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={updatingId !== null}
+                                  className="h-8 gap-1 text-xs mr-2"
+                                  onClick={() => {
+                                    setEditingId(f.id);
+                                    setEditStock(Number(f.current_stock_kg));
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3" /> Update Stock
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={updatingId !== null}
+                                  onClick={() => handleDelete(f.id)}
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                  title="Delete Feed Item"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
